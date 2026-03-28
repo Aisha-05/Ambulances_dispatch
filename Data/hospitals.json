@@ -1,0 +1,5 @@
+[
+  {"node_id": 20, "name": "Central Hospital",    "capacity": 50},
+  {"node_id": 21, "name": "West Clinic",          "capacity": 30},
+  {"node_id": 22, "name": "North Medical Center", "capacity": 40}
+]
