@@ -30,7 +30,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 
 from graph import CityGraph
 from emergency_generator import EmergencyGenerator
-from objective import compute_response_time, compute_coverage, print_metrics
+from objective import compute_avg_response_time, compute_coverage, print_metrics
 
 
 class Simulation:
@@ -73,12 +73,12 @@ class Simulation:
     # ------------------------------------------------------------------
 
     def set_rush_hour(self):
-        """Switch all road speeds to rush-hour mode."""
+        """Legacy helper: apply static rush-hour profile (dynamic updates may override)."""
         self.graph.set_traffic("rush_hour")
         print(f"[t={self.current_time}s] Traffic mode: RUSH HOUR")
 
     def set_normal_traffic(self):
-        """Switch all road speeds to normal mode."""
+        """Legacy helper: apply static normal profile (dynamic updates may override)."""
         self.graph.set_traffic("normal")
         print(f"[t={self.current_time}s] Traffic mode: NORMAL")
 
@@ -267,10 +267,13 @@ class Simulation:
 
         self.current_time = tick_end
 
-        # 2. Process ambulances arriving at scene or hospital
+        # 2. Dynamic, per-edge traffic update for current simulation time.
+        self.graph.update_traffic(self.current_time)
+
+        # 3. Process ambulances arriving at scene or hospital
         self._process_arrivals()
 
-        # 3. Dispatch
+        # 4. Dispatch
         self._try_dispatch()
 
     def run(self, duration_seconds=3600, verbose=True):

@@ -13,13 +13,20 @@ files — no code changes needed here.
 
 import json
 import math
+import random
 
 
-# Speed limits in km/h per road type and traffic mode
-SPEED_KMH = {
-    "highway": {"normal": 90, "rush_hour": 50},
-    "main":    {"normal": 50, "rush_hour": 25},
-    "small":   {"normal": 30, "rush_hour": 15},
+# Base speed limits in km/h per road type
+BASE_SPEED_KMH = {
+    "highway": 90,
+    "main": 50,
+    "small": 30,
+}
+
+# Legacy mode multipliers for backward compatibility with set_traffic().
+MODE_TRAFFIC_MULTIPLIER = {
+    "normal": {"highway": 1.0, "main": 1.0, "small": 1.0},
+    "rush_hour": {"highway": 1.8, "main": 2.0, "small": 2.0},
 }
 
 
@@ -32,9 +39,9 @@ class CityGraph:
             nodes_path (str): path to nodes.json
             edges_path (str): path to edges.json
         """
-        with open(nodes_path) as f:
+        with open(nodes_path, encoding="utf-8-sig") as f:
             nodes_data = json.load(f)
-        with open(edges_path) as f:
+        with open(edges_path, encoding="utf-8-sig") as f:
             edges_data = json.load(f)
 
         # nodes: dict { node_id -> {id, lat, lon, type, name} }
@@ -43,6 +50,8 @@ class CityGraph:
         # adjacency: dict { node_id -> list of (neighbor_id, edge_dict) }
         self.adjacency = {n["id"]: [] for n in nodes_data}
         for edge in edges_data:
+            # Backward compatibility: default to uncongested roads.
+            edge.setdefault("traffic", 1.0)
             self.adjacency[edge["from"]].append((edge["to"], edge))
 
         self.edges = edges_data
@@ -54,7 +63,9 @@ class CityGraph:
 
     def set_traffic(self, mode):
         """
-        Switch traffic mode. Affects all subsequent travel_time() calls.
+        Legacy compatibility helper that applies a static city-wide profile.
+
+        Dynamic per-edge traffic from update_traffic() should be preferred.
 
         Args:
             mode (str): "normal" or "rush_hour"
@@ -62,6 +73,58 @@ class CityGraph:
         if mode not in ("normal", "rush_hour"):
             raise ValueError(f"Unknown traffic mode: {mode}")
         self.traffic_mode = mode
+
+        # Keep old behavior available by setting edge-level traffic directly.
+        profile = MODE_TRAFFIC_MULTIPLIER[mode]
+        for edge in self.edges:
+            edge["traffic"] = profile[edge["type"]]
+
+    def update_traffic(self, current_time):
+        """
+        Dynamically update per-edge traffic based on time of day.
+
+        Rush windows (24h clock):
+            - 07:00 to 09:00
+            - 16:00 to 19:00
+
+        Effects:
+            - Highways get strongest rush-hour congestion
+            - Main roads moderate congestion
+            - Small roads lighter congestion
+            - Small random incidents can temporarily spike an edge
+            - Smoothing avoids abrupt jumps between steps
+
+        Args:
+            current_time (float): simulation time in seconds
+        """
+        hour = (current_time / 3600.0) % 24.0
+        is_rush = (7 <= hour < 9) or (16 <= hour < 19)
+        self.traffic_mode = "rush_hour" if is_rush else "normal"
+
+        if is_rush:
+            ranges = {
+                "highway": (1.6, 2.5),
+                "main": (1.4, 2.1),
+                "small": (1.1, 1.6),
+            }
+        else:
+            ranges = {
+                "highway": (0.85, 1.15),
+                "main": (0.9, 1.2),
+                "small": (0.85, 1.1),
+            }
+
+        for edge in self.edges:
+            low, high = ranges[edge["type"]]
+            target = random.uniform(low, high)
+
+            # Rare incident can temporarily increase congestion.
+            if random.random() < 0.02:
+                target = max(target, random.uniform(2.0, 2.8))
+
+            old = float(edge.get("traffic", 1.0))
+            smoothed = 0.7 * old + 0.3 * target
+            edge["traffic"] = max(0.7, min(3.0, smoothed))
 
     # ------------------------------------------------------------------
     # Core calculations
@@ -71,18 +134,19 @@ class CityGraph:
         """
         Compute travel time in seconds for a given edge.
 
-        Formula: time = distance / speed
-        Speed is determined by road type and current traffic mode.
+        Formula: time = (distance / base_speed) * traffic_factor
 
         Args:
-            edge (dict): an edge dict with keys 'length' and 'type'
+            edge (dict): an edge dict with keys 'length', 'type', and optional
+                         'traffic' congestion factor.
 
         Returns:
             float: travel time in seconds
         """
-        speed_kmh = SPEED_KMH[edge["type"]][self.traffic_mode]
+        speed_kmh = BASE_SPEED_KMH[edge["type"]]
         speed_ms = speed_kmh * 1000 / 3600  # convert km/h to m/s
-        return edge["length"] / speed_ms
+        traffic = float(edge.get("traffic", 1.0))
+        return (edge["length"] / speed_ms) * traffic
 
     def haversine(self, node_a_id, node_b_id):
         """

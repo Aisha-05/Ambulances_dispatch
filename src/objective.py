@@ -11,7 +11,7 @@ Team B2 (Hill Climbing) will call objective() to evaluate candidate positions.
 """
 
 
-def compute_response_time(emergencies):
+def compute_avg_response_time(emergencies):
     """
     Average response time across all resolved emergencies.
 
@@ -80,7 +80,7 @@ def objective(emergencies, ambulances, graph, w1=0.7, w2=0.3):
     Returns:
         float: combined cost (lower is better)
     """
-    rt = compute_response_time(emergencies)
+    rt = compute_avg_response_time(emergencies)
     cov = compute_coverage(ambulances, graph)
     coverage_cost = -cov  # convert back to positive (lower = better coverage)
     return w1 * rt + w2 * coverage_cost
@@ -98,7 +98,7 @@ def print_metrics(emergencies, ambulances, graph):
     total = len(emergencies)
     resolved = sum(1 for e in emergencies if e["arrival_time"] is not None)
     waiting = sum(1 for e in emergencies if e["status"] == "waiting")
-    avg_rt = compute_response_time(emergencies)
+    avg_rt = compute_avg_response_time(emergencies)
     cov = compute_coverage(ambulances, graph)
 
     print("=== Performance Metrics ===")
