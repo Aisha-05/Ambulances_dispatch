@@ -19,9 +19,25 @@
   {"id": 17, "lat": 36.7550, "lon": 3.0550, "type": "intersection", "name": "Highway North"},
   {"id": 18, "lat": 36.6650, "lon": 3.0700, "type": "intersection", "name": "Far South"},
   {"id": 19, "lat": 36.7000, "lon": 3.0400, "type": "intersection", "name": "West End"},
-  {"id": 20, "lat": 36.7200, "lon": 3.1000, "type": "hospital",     "name": "Central Hospital"},
-  {"id": 21, "lat": 36.6900, "lon": 3.0550, "type": "hospital",     "name": "West Clinic"},
-  {"id": 22, "lat": 36.7500, "lon": 3.0900, "type": "hospital",     "name": "North Medical Center"},
+
+
+
+{"id": 20, "lat": 36.4642, "lon": 2.5855, "type": "hospital",     "name": "Isaad Hassani"},
+{"id": 21, "lat": 36.724667, "lon": 3.020586, "type": "hospital",     "name": "Hopital de Tixeraine"},
+ {"id": 22, "lat": 36.703597, "lon": 3.123409, "type": "hospital",     "name": "Salim Zemirli"},
+ {"id": 23, "lat": 36.794673, "lon": 3.049683, "type": "hospital",     "name": "Hopital Maillot"},
+ {"id": 24, "lat":36.773209, "lon": 3.039782, "type": "hospital",     "name": "Hopital Birtraria"},
+  {"id": 25, "lat": 36.4536, "lon": 3.0306, "type": "hospital",     "name": "Mustapha Pacha"},
+  {"id": 26, "lat": 36.754711, "lon": 3.001134, "type": "hospital",     "name": "BOUKHROUFA Abdelkader"},
+
+
+
+
+
+
+
+
+  
   {"id": 23, "lat": 36.7080, "lon": 3.0720, "type": "depot",        "name": "Main Depot"},
   {"id": 24, "lat": 36.7300, "lon": 3.0600, "type": "depot",        "name": "North Depot"}
 ]
