@@ -1,5 +1,10 @@
 [
-  {"node_id": 20, "name": "Central Hospital",    "capacity": 50},
-  {"node_id": 21, "name": "West Clinic",          "capacity": 30},
-  {"node_id": 22, "name": "North Medical Center", "capacity": 40}
+  {"node_id": 20, "name": "Isaad Hassani",    "capacity": 600},
+  {"node_id": 21, "name": "Hopital de Tixeraine",          "capacity": 920},
+  {"node_id": 22, "name": "Salim Zemirli", "capacity": 240},
+    {"node_id": 23, "name": "CHU Maillot", "capacity":  1200},
+      {"node_id": 24, "name": "Drid Houcine", "capacity": 280},
+        {"node_id": 25, "name": "Mustapha Pacha", "capacity": 1500},
+          {"node_id": 26, "name": "BOUKHROUFA Abdelkader", "capacity": 80}
+
 ]
