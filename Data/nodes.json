@@ -1,12 +1,17 @@
 [
-  {"id": 0,  "lat": 36.7000, "lon": 3.0700, "type": "intersection", "name": "Central Square"},
-  {"id": 1,  "lat": 36.7100, "lon": 3.0800, "type": "intersection", "name": "North Junction"},
-  {"id": 2,  "lat": 36.7200, "lon": 3.0600, "type": "intersection", "name": "Northwest Cross"},
-  {"id": 3,  "lat": 36.7300, "lon": 3.0900, "type": "intersection", "name": "Far North"},
-  {"id": 4,  "lat": 36.7000, "lon": 3.1000, "type": "intersection", "name": "East Gate"},
-  {"id": 5,  "lat": 36.7150, "lon": 3.0500, "type": "intersection", "name": "West Bypass"},
-  {"id": 6,  "lat": 36.6900, "lon": 3.0800, "type": "intersection", "name": "South Center"},
-  {"id": 7,  "lat": 36.7250, "lon": 3.0750, "type": "intersection", "name": "Uptown Cross"},
+  
+  {"id": 0,  "lat": 36.7794301, "lon": 2.9774559, "type": "intersection", "name": "Beside BH Dental Dr HALAI"},
+  {"id": 1,  "lat": 36.7199944, "lon": 2.9957678, "type": "intersection", "name": "Near Areej Shopping Draria"},
+  {"id": 2,  "lat": 36.7211857, "lon": 3.1380370, "type": "intersection", "name": "Siege APC El herrach"},
+  {"id": 3,  "lat": 36.7910699, "lon": 3.0518781, "type": "intersection", "name": "Trois Horloges"},
+  {"id": 4,  "lat": 36.7688751, "lon": 3.0243603, "type": "intersection", "name": "Medical analysis laboraroty N.Korteby-ALLal"},
+  {"id": 5,  "lat": 36.7615284, "lon": 3.0567611, "type": "intersection", "name": "Place 1er Mai"},
+  {"id": 6,  "lat": 36.7597787, "lon": 3.0138340, "type": "intersection", "name": "ESSEM ABS"},
+  {"id": 7,  "lat":36.7687319, "lon": 3.0195749, "type": "intersection", "name": "Avenue Khoudja Mustadit Ali"},
+
+
+
+
   {"id": 8,  "lat": 36.7050, "lon": 3.0950, "type": "intersection", "name": "East Side"},
   {"id": 9,  "lat": 36.7400, "lon": 3.0650, "type": "intersection", "name": "Northern Heights"},
   {"id": 10, "lat": 36.6800, "lon": 3.0600, "type": "intersection", "name": "Southwest Corner"},
@@ -22,6 +27,8 @@
 
 
 
+  
+
 {"id": 20, "lat": 36.4642, "lon": 2.5855, "type": "hospital",     "name": "Isaad Hassani"},
 {"id": 21, "lat": 36.724667, "lon": 3.020586, "type": "hospital",     "name": "Hopital de Tixeraine"},
  {"id": 22, "lat": 36.703597, "lon": 3.123409, "type": "hospital",     "name": "Salim Zemirli"},
@@ -29,9 +36,6 @@
  {"id": 24, "lat":36.773209, "lon": 3.039782, "type": "hospital",     "name": "Hopital Birtraria"},
   {"id": 25, "lat": 36.4536, "lon": 3.0306, "type": "hospital",     "name": "Mustapha Pacha"},
   {"id": 26, "lat": 36.754711, "lon": 3.001134, "type": "hospital",     "name": "BOUKHROUFA Abdelkader"},
-
-
-
 
 
 
