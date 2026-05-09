@@ -1,8 +1,6 @@
 """
 assignment.py — Ambulance assignment strategies.
 
-STUB FILE — Team B2 implements this.
-
 Two strategies to implement and compare:
     1. greedy_assign  — closest by Euclidean (haversine) distance (BASELINE)
     2. astar_assign   — closest by actual A* travel time (SMART)
@@ -25,10 +23,10 @@ def greedy_assign(graph, ambulances, emergency):
     Returns:
         dict or None: the selected ambulance, or None if none are idle
     """
-    # TODO: Team B2 — implement greedy assignment
-    # Hint: filter ambulances by status == "idle", then minimize
-    # graph.haversine(ambulance["position"], emergency["node"])
-    raise NotImplementedError("greedy_assign() not yet implemented — Team B2 task.")
+    idle = [a for a in ambulances if a["status"] == "idle"]
+    if not idle:
+        return None
+    return min(idle, key=lambda a: graph.haversine(a["position"], emergency["node"]))
 
 
 def astar_assign(graph, ambulances, emergency):
