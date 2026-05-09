@@ -14,9 +14,10 @@ At each tick:
     3. Ambulances in transit move closer to their destination.
     4. Arrived ambulances update the emergency record.
 
-NOTE: Steps 2 and 3 use a SIMPLIFIED dispatcher and instant travel by default.
-      Team B2 will replace the dispatcher with Real-Time A* and Greedy/A* assignment.
-      The interface (assign_ambulance, resolve_emergency) stays the same.
+dispatch_mode controls which assignment strategy is used:
+    - "simple"  : baseline haversine dispatcher (built-in, no import needed)
+    - "greedy"  : greedy_assign() from assignment.py (haversine, same as simple but modular)
+    - "astar"   : astar_assign() from assignment.py (actual A* travel time)
 
 Team A owns this file.
 """
@@ -25,22 +26,23 @@ import json
 import sys
 import os
 
-# Allow running from any directory
 sys.path.insert(0, os.path.dirname(__file__))
 
 from graph import CityGraph
 from emergency_generator import EmergencyGenerator
 from objective import compute_avg_response_time, compute_coverage, print_metrics
+from assignment import greedy_assign, astar_assign
 
 
 class Simulation:
-    def __init__(self, data_dir, time_step=30):
+    def __init__(self, data_dir, time_step=30, dispatch_mode="greedy"):
         """
         Initialize the simulation from JSON data files.
 
         Args:
             data_dir (str): path to the Data/ folder containing JSON files
             time_step (int): seconds per simulation tick (default: 30)
+            dispatch_mode (str): "simple", "greedy", or "astar"
         """
         nodes_path      = os.path.join(data_dir, "nodes.json")
         edges_path      = os.path.join(data_dir, "edges.json")
@@ -55,17 +57,21 @@ class Simulation:
         with open(ambulances_path) as f:
             self.ambulances = json.load(f)
 
-        # Emergencies only appear at intersection nodes (not hospitals/depots)
+        if dispatch_mode not in ("simple", "greedy", "astar"):
+            raise ValueError(f"Unknown dispatch_mode '{dispatch_mode}'. Choose 'simple', 'greedy', or 'astar'.")
+        self.dispatch_mode = dispatch_mode
+
         intersection_ids = self.graph.get_nodes_by_type("intersection")
         self.generator = EmergencyGenerator(intersection_ids, rate_per_hour=6)
 
         self.emergencies = []
-        self.current_time = 0       # simulation clock in seconds
-        self.time_step = time_step  # seconds per tick
-        self._pending_arrivals = {} # ambulance_id -> (arrival_time, emergency_id)
+        self.current_time = 0
+        self.time_step = time_step
+        self._pending_arrivals = {}
         self._next_emergency_time = self.generator.time_until_next()
 
         print("Simulation initialized.")
+        print(f"  Dispatch mode: {self.dispatch_mode.upper()}")
         self.graph.summary()
 
     # ------------------------------------------------------------------
@@ -73,12 +79,12 @@ class Simulation:
     # ------------------------------------------------------------------
 
     def set_rush_hour(self):
-        """Legacy helper: apply static rush-hour profile (dynamic updates may override)."""
+        """Legacy helper: apply static rush-hour profile."""
         self.graph.set_traffic("rush_hour")
         print(f"[t={self.current_time}s] Traffic mode: RUSH HOUR")
 
     def set_normal_traffic(self):
-        """Legacy helper: apply static normal profile (dynamic updates may override)."""
+        """Legacy helper: apply static normal profile."""
         self.graph.set_traffic("normal")
         print(f"[t={self.current_time}s] Traffic mode: NORMAL")
 
@@ -99,7 +105,7 @@ class Simulation:
         Find the hospital node closest to a given node by haversine distance.
 
         Args:
-            node_id (int): the node to find a hospital near (usually emergency scene)
+            node_id (int): the node to find a hospital near
 
         Returns:
             int: hospital node ID
@@ -110,15 +116,13 @@ class Simulation:
         )["node_id"]
 
     # ------------------------------------------------------------------
-    # Dispatcher interface (Team B2 will implement smarter versions)
+    # Dispatcher (baseline — kept for "simple" mode and fallback)
     # ------------------------------------------------------------------
 
     def simple_assign(self, emergency):
         """
-        GREEDY dispatcher (baseline): assign the closest idle ambulance
-        by straight-line (haversine) distance.
-
-        Team B2 will compare this to A*-based time assignment.
+        BASELINE dispatcher: assign the closest idle ambulance by haversine distance.
+        Used when dispatch_mode == "simple".
 
         Args:
             emergency (dict): the emergency event to assign
@@ -129,18 +133,14 @@ class Simulation:
         idle = self.get_idle_ambulances()
         if not idle:
             return None
-        closest = min(
+        return min(
             idle,
             key=lambda a: self.graph.haversine(a["position"], emergency["node"])
         )
-        return closest
 
     def assign_ambulance(self, ambulance, emergency):
         """
-        Mark an ambulance as assigned to an emergency.
-
-        Computes a simplified travel time (haversine / road speed) and
-        schedules the arrival. Team B2 will replace this with A* path travel.
+        Mark an ambulance as assigned to an emergency and schedule its arrival.
 
         Args:
             ambulance (dict): the ambulance to assign
@@ -151,9 +151,6 @@ class Simulation:
         emergency["status"] = "assigned"
         emergency["ambulance_id"] = ambulance["id"]
 
-        # Baseline-only proxy: straight-line distance treated as a main-road edge.
-        # This is intentionally optimistic (underestimates true road-network time)
-        # and will differ from Team B2's A* travel times.
         dist = self.graph.haversine(ambulance["position"], emergency["node"])
         travel_time = self.graph.travel_time({"length": dist, "type": "main"})
 
@@ -223,8 +220,6 @@ class Simulation:
         ]
 
         for amb_id, phase, target in due:
-            # Remove first so handlers can safely schedule the next phase for the
-            # same ambulance ID without getting overwritten by cleanup logic.
             entry = self._pending_arrivals.pop(amb_id, None)
             if entry is None:
                 continue
@@ -237,10 +232,21 @@ class Simulation:
                 self.finish_transport(ambulance, target)
 
     def _try_dispatch(self):
-        """Assign idle ambulances to waiting emergencies (greedy baseline)."""
+        """
+        Assign idle ambulances to waiting emergencies using the chosen dispatch mode:
+            - "simple" : built-in haversine baseline
+            - "greedy" : greedy_assign() from assignment.py
+            - "astar"  : astar_assign() from assignment.py
+        """
         waiting = [e for e in self.emergencies if e["status"] == "waiting"]
         for emergency in waiting:
-            ambulance = self.simple_assign(emergency)
+            if self.dispatch_mode == "astar":
+                ambulance = astar_assign(self.graph, self.ambulances, emergency)
+            elif self.dispatch_mode == "greedy":
+                ambulance = greedy_assign(self.graph, self.ambulances, emergency)
+            else:
+                ambulance = self.simple_assign(emergency)
+
             if not ambulance:
                 break
             self.assign_ambulance(ambulance, emergency)
@@ -257,7 +263,6 @@ class Simulation:
         """
         tick_end = self.current_time + self.time_step
 
-        # 1. Emergency arrivals (continuous-time Poisson process)
         while self._next_emergency_time <= tick_end:
             event_time = self._next_emergency_time
             new_e = self.generator.generate(event_time)
@@ -267,13 +272,10 @@ class Simulation:
 
         self.current_time = tick_end
 
-        # 2. Dynamic, per-edge traffic update for current simulation time.
         self.graph.update_traffic(self.current_time)
 
-        # 3. Process ambulances arriving at scene or hospital
         self._process_arrivals()
 
-        # 4. Dispatch
         self._try_dispatch()
 
     def run(self, duration_seconds=3600, verbose=True):
@@ -286,7 +288,8 @@ class Simulation:
         """
         print(f"\n{'='*50}")
         print(f"Starting simulation: {duration_seconds}s ({duration_seconds/3600:.1f} hours)")
-        print(f"Traffic mode: {self.graph.traffic_mode}")
+        print(f"Dispatch mode: {self.dispatch_mode.upper()}")
+        print(f"Traffic mode : {self.graph.traffic_mode}")
         print(f"{'='*50}\n")
 
         end_time = self.current_time + duration_seconds
